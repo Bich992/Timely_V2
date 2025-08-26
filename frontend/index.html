@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timely – Login</title>
+  <link rel="stylesheet" href="/styles/style.css"/>
+</head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/assets/logo.svg" class="logo" alt="Timely"/>
+    <span>Timely</span>
+  </div>
+  <nav>
+    <a href="/help">Come funziona</a>
+    <a href="/roadmap">Roadmap</a>
+    <button id="themeToggle" class="chip">🌓</button>
+  </nav>
+</header>
+
+<main class="centered">
+  <div class="card card--accent">
+    <h1>Benvenuto su Timely</h1>
+    <p>Il social dove ogni post ha una scadenza. Usa i <b>TIMT</b> per dargli vita.</p>
+    <form id="loginForm">
+      <input id="username" placeholder="Scegli il tuo username" required />
+      <button type="submit" class="btn btn-primary">Entra</button>
+    </form>
+  </div>
+</main>
+
+<script src="/scripts/app.js"></script>
+<script>
+  initThemeToggle();
+  mountToastRoot();
+  mountImageModal();
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    if (!username) return;
+    const res = await api("/api/login", { method: "POST", body: { username }});
+    if (res && res.username) {
+      localStorage.setItem("timely_username", res.username);
+      showToast('success','Benvenuto ' + res.username + '!');
+      window.location.href = "/home";
+    } else {
+      showToast('error','Errore login');
+    }
+  });
+</script>
+</body>
+</html>

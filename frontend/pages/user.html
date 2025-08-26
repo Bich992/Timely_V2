@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timely – Profilo utente</title>
+  <link rel="stylesheet" href="/styles/style.css"/>
+</head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/assets/logo.svg" class="logo" alt="Timely"/>
+    <span>Timely</span>
+  </div>
+  <nav>
+    <a href="/home">Home</a>
+    <a href="/board">Bacheca</a>
+    <a href="/profile">Profilo</a>
+    <a href="/help">Come funziona</a>
+    <a href="/roadmap">Roadmap</a>
+    <button id="themeToggle" class="chip">🌓</button>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="card card--accent" id="headerCard">
+    <div class="profile-box">
+      <img id="avatar" src="/assets/default-avatar.png" class="avatar" alt="Avatar">
+      <div>
+        <h2 id="uname">@utente</h2>
+        <p class="muted" id="bio"></p>
+        <p class="muted" id="meta"></p>
+        <div id="followArea"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Post attivi</h2>
+    <ul id="list" class="feed"></ul>
+  </div>
+</main>
+
+<script src="/scripts/app.js"></script>
+<script>
+  requireAuth();
+  initThemeToggle(); mountToastRoot(); mountImageModal();
+
+  const viewer = localStorage.getItem("timely_username");
+  const target = getParam("u");
+
+  if (!target) { showToast('error','Utente mancante'); location.href = "/home"; }
+
+  function renderPosts(list) {
+    const root = document.getElementById("list");
+    root.innerHTML = "";
+    if (!list || list.length === 0) { root.innerHTML = "<li class='muted'>Nessun post attivo.</li>"; return; }
+    for (const p of list) {
+      const secs = p.remainingSeconds || 0;
+      const hours = Math.floor(secs / 3600);
+      const mins = Math.floor((secs % 3600) / 60);
+      const badge = p.certified ? `<span class="badge-cert">✔ Community Certified</span>` : "";
+      const li = document.createElement("li");
+      li.className = "post";
+      const cid = `c_${p.id}`;
+      li.innerHTML = `
+        <div class="post-head" style="gap:8px;">
+          <div><a class="author-link" href="/user?u=${encodeURIComponent(p.author)}">@${p.author}</a> ${badge}</div>
+          <span class="pill">⏳ ${hours}h ${mins}m</span>
+        </div>
+        <p>${escapeHtml(p.content)}</p>
+        ${p.imageUrl ? `<img class="post-image clickable" src="${p.imageUrl}" alt="immagine post">` : ""}
+        <div class="row">
+          ${viewer !== p.author ? `<button class="chip" data-extend="${p.id}">+1 TIMT ( +6h )</button>` : "<span class='muted'>È il suo post</span>"}
+          <button class="chip" data-comments="${p.id}">💬 Commenti (${p.commentsCount||0})</button>
+        </div>
+        <div id="${cid}" class="comments"></div>
+      `;
+      root.appendChild(li);
+    }
+    bindClickableImages(root);
+
+    root.querySelectorAll("[data-extend]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-extend");
+        const res = await api(`/api/posts/${id}/extend`, { method: "POST", body: { username: viewer, timt: 1 } });
+        if (res?.ok) { showToast('success','Post esteso di +6h'); loadPosts(); }
+        else { showToast('error', res?.error || "Errore estensione"); }
+      });
+    });
+    root.querySelectorAll("[data-comments]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-comments");
+        const container = document.getElementById(`c_${id}`);
+        const open = container.classList.contains("open");
+        root.querySelectorAll(".comments").forEach(el => el.classList.remove("open"));
+        if (!open) {
+          container.classList.add("open");
+          container.innerHTML = `<div class="muted">Caricamento commenti…</div>`;
+          const data = await api(`/api/comments/${id}`);
+          container.innerHTML = "";
+          for (const c of (data?.comments || [])) {
+            const item = document.createElement("div");
+            item.className = "comment";
+            item.innerHTML = `
+              <div class="comment-meta"><a class="author-link" href="/user?u=${encodeURIComponent(c.username)}">@${c.username}</a> · ${new Date(c.at).toLocaleString()}</div>
+              <div>${escapeHtml(c.text)}</div>
+            `;
+            container.appendChild(item);
+          }
+        }
+      });
+    });
+  }
+
+  async function loadHeader() {
+    const info = await api(`/api/profile?username=${encodeURIComponent(target)}&viewer=${encodeURIComponent(viewer)}`);
+    document.getElementById("avatar").src = info.avatar || "/assets/default-avatar.png";
+    document.getElementById("uname").textContent = `@${info.username}`;
+    document.getElementById("bio").textContent = info.bio || "";
+    document.getElementById("meta").textContent = `Follower: ${info.followersCount} · Seguiti: ${info.followingCount} · Post attivi: ${info.postsCount}`;
+
+    const area = document.getElementById("followArea");
+    area.innerHTML = "";
+    if (viewer !== target) {
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.textContent = info.isFollowing ? "✓ Segui già – Non seguire" : "➕ Segui";
+      btn.addEventListener("click", async () => {
+        const r = await api("/api/follow", { method: "POST", body: { username: viewer, target } });
+        if (r?.ok) {
+          showToast('success', r.isFollowing ? `Ora segui @${target}` : `Hai smesso di seguire @${target}`);
+          loadHeader();
+        } else showToast('error', r?.error || "Errore follow");
+      });
+      area.appendChild(btn);
+    } else {
+      const span = document.createElement("span");
+      span.className = "muted";
+      span.textContent = "Questo è il tuo profilo pubblico.";
+      area.appendChild(span);
+    }
+  }
+
+  async function loadPosts() {
+    const list = await api(`/api/user-posts?username=${encodeURIComponent(target)}`);
+    renderPosts(list);
+  }
+
+  (async function init() {
+    await loadHeader(); await loadPosts();
+  })();
+</script>
+</body>
+</html>

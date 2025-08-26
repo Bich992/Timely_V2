@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Timely – Challenges</title><link rel="stylesheet" href="/styles/style.css"/></head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root"></div>
+<header class="topbar">
+  <div class="brand"><img src="/assets/logo.svg" class="logo" alt="Timely"/><span>Timely</span></div>
+  <nav class="nav"><a href="/home">Home</a><a href="/profile">Profilo</a><a class="active" href="/pages/challenges.html">Challenges</a><a href="/pages/shop.html">Shop</a><a href="/pages/tutorial.html">Tutorial</a></nav>
+</header>
+<main class="wrap">
+  <section class="grid"><div class="card"><h2>Crea challenge</h2><div class="flow"><label>Titolo <input id="ch-title" placeholder="Titolo"/></label><label>Tipo <select id="ch-type"><option value="duel">Duel</option><option value="quiz">Quiz</option></select></label><label>Descrizione <textarea id="ch-desc" rows="3" placeholder="Descrizione breve"></textarea></label><label>Inizio <input id="ch-start" type="datetime-local"/></label><label>Fine <input id="ch-end" type="datetime-local"/></label><label>Premio TIMT <input id="ch-prize" type="number" value="10"/></label><label>Bonus minuti <input id="ch-bonus" type="number" value="60"/></label><button class="btn" id="ch-create">Crea</button></div></div>
+    <div class="card"><h2>Challenge disponibili</h2><div id="ch-list"></div></div>
+    <div class="card"><h2>Dettaglio</h2><div id="ch-detail" class="flow"></div></div>
+  </section>
+</main>
+<script src="/scripts/app.js"></script>
+<script src="/scripts/challenges.js"></script>
+</body></html>

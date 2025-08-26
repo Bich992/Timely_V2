@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timely – Profilo</title>
+  <link rel="stylesheet" href="/styles/style.css"/>
+</head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/assets/logo.svg" class="logo" alt="Timely"/>
+    <span>Timely</span>
+  </div>
+  <nav>
+    <a href="/home">Home</a>
+    <a href="/board">Bacheca</a>
+    <a href="/profile">Profilo</a>
+    <a href="/help">Come funziona</a>
+    <a href="/roadmap">Roadmap</a>
+
+    <a href="/pages/challenges.html">Challenges</a>
+    <a href="/pages/shop.html">Shop</a>
+    <a href="/pages/tutorial.html">Tutorial</a>
+    <button id="themeToggle" class="chip">🌓</button>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="balanced">
+    <div class="card">
+      <h2>Profilo</h2>
+      <p>Utente: <strong id="uname">–</strong></p>
+      <p>TIMT disponibili: <strong id="balance">–</strong></p>
+
+      <div class="profile-box">
+        <img id="avatar" src="/assets/default-avatar.png" alt="Avatar" class="avatar">
+        <div>
+          <label class="chip">Carica avatar
+            <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" style="display:none"/>
+          </label>
+          <p class="muted" id="avatarHint">PNG/JPG/WebP max 5MB</p>
+        </div>
+      </div>
+
+      <button id="dailyBtn" class="chip">🎁 Bonus giornaliero +1 TIMT</button>
+      <p id="dailyInfo" class="muted"></p>
+      <p><a class="chip" href="/user?u=" id="viewPublic">Vedi il tuo profilo pubblico</a></p>
+    </div>
+
+    <div class="card">
+      <h2>I miei post</h2>
+      <ul id="mine" class="feed"></ul>
+    </div>
+
+    <div class="card">
+      <h2>I miei preferiti</h2>
+      <ul id="saved" class="feed"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Traguardi</h2>
+      <ul id="achievements" class="feed"></ul>
+    </div>
+  </section>
+</main>
+
+<script src="/scripts/app.js"></script>
+<script>
+  requireAuth();
+  initThemeToggle();
+  mountToastRoot();
+  mountImageModal();
+
+  const username = localStorage.getItem("timely_username");
+  document.getElementById("uname").textContent = username;
+  document.getElementById("viewPublic").href = `/user?u=${encodeURIComponent(username)}`;
+  const avatarImg = document.getElementById("avatar");
+  const avatarInput = document.getElementById("avatarInput");
+
+  avatarInput.addEventListener("change", async () => {
+    const f = avatarInput.files?.[0];
+    if (!f) return;
+    const fd = new FormData();
+    fd.append("avatar", f); fd.append("username", username);
+    const up = await fetch("/api/upload/avatar", { method: "POST", body: fd });
+    const j = await up.json();
+    if (j?.ok && j.url) {
+      avatarImg.src = j.url + "?t=" + Date.now();
+      showToast('success','Avatar aggiornato!');
+    } else showToast('error', j?.error || "Errore upload avatar");
+  });
+
+  async function refreshBalance() {
+    const res = await api(`/api/balance?username=${encodeURIComponent(username)}`);
+    document.getElementById("balance").textContent = res?.tokens ?? "0";
+    if (res?.avatar) avatarImg.src = res.avatar;
+    const daily = res?.daily;
+    if (daily) {
+      document.getElementById("dailyInfo").textContent = `Oggi: guadagnati ${daily.earned}/${5} TIMT · Bonus: ${daily.claimed ? "Riscosso" : "Disponibile"}`;
+      document.getElementById("dailyBtn").disabled = !!daily.claimed;
+    }
+  }
+
+  function renderList(list, targetEl) {
+    targetEl.innerHTML = "";
+    if (!list || list.length === 0) {
+      targetEl.innerHTML = "<li class='muted'>Vuoto.</li>";
+      return;
+    }
+    for (const p of list) {
+      const secs = p.remainingSeconds || 0;
+      const hours = Math.floor(secs / 3600);
+      const mins = Math.floor((secs % 3600) / 60);
+      const badge = p.certified ? `<span class="badge-cert">✔ Community Certified</span>` : "";
+      const li = document.createElement("li");
+      li.className = "post";
+      const cid = `c_${p.id}`;
+      li.innerHTML = `
+        <div class="post-head" style="gap:8px;">
+          <div><a class="author-link" href="/user?u=${encodeURIComponent(p.author)}">@${p.author}</a> ${badge}</div>
+          <span class="pill">⏳ ${hours}h ${mins}m</span>
+        </div>
+        <p>${escapeHtml(p.content)}</p>
+        ${p.imageUrl ? `<img class="post-image clickable" src="${p.imageUrl}" alt="immagine post">` : ""}
+        <div class="post-actions">
+          <span class="muted">Like: ${p.likesCount} · Commenti: ${p.commentsCount} · Estensioni: ${p.extendedBy.length}</span>
+          <button class="chip" data-comments="${p.id}">💬 Mostra commenti</button>
+        </div>
+        <div id="${cid}" class="comments"></div>
+      `;
+      targetEl.appendChild(li);
+    }
+    bindClickableImages(targetEl);
+
+    targetEl.querySelectorAll("[data-comments]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-comments");
+        const container = document.getElementById(`c_${id}`);
+        const open = container.classList.contains("open");
+        targetEl.querySelectorAll(".comments").forEach(el => el.classList.remove("open"));
+        if (!open) {
+          container.classList.add("open");
+          // usa la stessa logica di home
+          (function renderComments() {
+            container.innerHTML = `<div class="muted">Caricamento commenti…</div>`;
+            (async () => {
+              const data = await api(`/api/comments/${id}`);
+              const list = data?.comments || [];
+              container.innerHTML = "";
+              for (const c of list) {
+                const item = document.createElement("div");
+                item.className = "comment";
+                item.innerHTML = `
+                  <div class="comment-meta"><a class="author-link" href="/user?u=${encodeURIComponent(c.username)}">@${c.username}</a> · ${new Date(c.at).toLocaleString()}</div>
+                  <div>${escapeHtml(c.text)}</div>
+                `;
+                container.appendChild(item);
+              }
+            })();
+          })();
+        }
+      });
+    });
+  }
+
+  async function loadMine() {
+    const posts = await api(`/api/my-posts?username=${encodeURIComponent(username)}`);
+    renderList(posts, document.getElementById("mine"));
+  }
+  async function loadSaved() {
+    const res = await api(`/api/saved?username=${encodeURIComponent(username)}&includeExpired=false`);
+    renderList(res?.posts || [], document.getElementById("saved"));
+  }
+
+  document.getElementById("dailyBtn").addEventListener("click", async () => {
+    const res = await api("/api/daily-claim", { method: "POST", body: { username } });
+    if (res?.ok) { showToast('success','Bonus giornaliero riscosso!'); await refreshBalance(); }
+    else { showToast('error', res?.error || "Errore bonus giornaliero"); }
+  });
+
+  
+  async function loadAchievements(){
+    const list = await api(`/api/achievements/${encodeURIComponent(username)}`);
+    const el = document.getElementById('achievements'); el.innerHTML = '';
+    if (!list || list.length===0){ el.innerHTML = "<li class='muted'>Nessun traguardo (ancora!)</li>"; return; }
+    for (const a of list){
+      const li = document.createElement('li'); li.className='post';
+      li.innerHTML = `<div class="row"><strong>${a.title}</strong></div><div class="muted">${a.desc||''}</div>`;
+      el.appendChild(li);
+    }
+  }
+
+  (async function init() {
+    await refreshBalance(); await loadMine(); await loadSaved(); await loadAchievements();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timely – UI Kit</title>
+  <link rel="stylesheet" href="/styles/style.css"/>
+</head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/assets/logo.svg" class="logo" alt="Timely"/>
+    <span>Timely</span>
+  </div>
+  <nav>
+    <a href="/home">Home</a>
+    <a href="/profile">Profilo</a>
+    <a href="/help">Come funziona</a>
+    <a href="/roadmap">Roadmap</a>
+    <a href="/pages/ui.html">UI Kit</a>
+    <button id="themeToggle" class="chip">🌓</button>
+  </nav>
+</header>
+
+<main class="container">
+  <h1>UI Kit</h1>
+
+  <div class="card card--accent" style="margin:16px 0;">
+    <h2>Buttons</h2>
+    <p>
+      <button class="btn btn-primary" onclick="showToast('success','Azione ok')">Primary</button>
+      <button class="btn" onclick="showToast('info','Info')">Default</button>
+      <button class="btn btn-danger" onclick="showToast('error','Errore')">Danger</button>
+    </p>
+  </div>
+
+  <div class="card" style="margin:16px 0;">
+    <h2>Chips & Pills</h2>
+    <p>
+      <span class="chip">Chip</span>
+      <span class="pill">⏳ 12h 30m</span>
+    </p>
+  </div>
+
+  <div class="card" style="margin:16px 0;">
+    <h2>Card accent</h2>
+    <div class="card card--accent">Bordo evidenziato brand</div>
+  </div>
+
+  <div class="card" style="margin:16px 0;">
+    <h2>Skeleton</h2>
+    <div class="skeleton" style="height:16px; width: 40%; margin-bottom:8px;"></div>
+    <div class="skeleton" style="height:12px; width: 80%;"></div>
+  </div>
+
+  <div class="card" style="margin:16px 0;">
+    <h2>Toast demo</h2>
+    <p><button class="btn" onclick="showToast('info','Ciao da Timely!')">Mostra toast</button></p>
+  </div>
+</main>
+
+<script src="/scripts/app.js"></script>
+<script>
+  initThemeToggle();
+  mountToastRoot();
+</script>
+</body>
+</html>

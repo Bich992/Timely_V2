@@ -1,0 +1,5 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#00c7b7"></stop><stop offset="1" stop-color="#0bf"></stop></linearGradient></defs>
+  <circle cx="100" cy="100" r="96" fill="url(#g)"></circle>
+  <text x="50%" y="54%" text-anchor="middle" font-family="Segoe UI, Arial" font-size="64" fill="#081a19" font-weight="700">T</text>
+</svg>

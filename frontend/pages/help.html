@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timely – Come funziona</title>
+  <link rel="stylesheet" href="/styles/style.css"/>
+</head>
+<body>
+<div class="brand-bg" aria-hidden="true"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/assets/logo.svg" class="logo" alt="Timely"/>
+    <span>Timely</span>
+  </div>
+  <nav>
+    <a href="/home">Home</a>
+    <a href="/profile">Profilo</a>
+    <a href="/help">Come funziona</a>
+    <a href="/roadmap">Roadmap</a>
+    <button id="themeToggle" class="chip">🌓</button>
+  </nav>
+</header>
+
+<main class="container">
+  <div class="card">
+    <h2>Come funziona Timely</h2>
+    <ul class="bullets">
+      <li>Ogni post costa <b>1 TIMT</b> e nasce con <b>24h</b> di vita.</li>
+      <li>Estensioni: <b>+1 TIMT = +6h</b>. L’autore può estendere il proprio post max <b>+12h</b>.</li>
+      <li>I post restano vivi soprattutto grazie alla <b>community</b> (like, commenti, estensioni da altri utenti).</li>
+      <li>Ricompense al creator: ogni <b>5 like</b> → +1 TIMT; ogni <b>2 commenti</b> → +1 TIMT (con tetto giornaliero).</li>
+      <li>Bonus giornaliero: <b>+1 TIMT</b> al giorno dal profilo.</li>
+      <li>Preferiti: salva i post che ami di più nella tua lista personale.</li>
+      <li>Badge <b>Community Certified</b> sui post che superano soglie di supporto.</li>
+    </ul>
+  </div>
+</main>
+
+<script src="/scripts/app.js"></script>
+<script>initThemeToggle(); mountToastRoot();</script>
+</body>
+</html>
